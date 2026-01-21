@@ -40,7 +40,7 @@ typedef struct {
     uint32_t num_bounces;
     uint8_t num_sources;
     AT_Material material;
-    
+
     // borrowed: must remain valid for the entire lifetime of the scene
     const AT_Model *environment;
     const AT_AABB *observer_area;
@@ -78,11 +78,16 @@ void AT_scene_destroy(
 );
 
 // Simulation
-
+// Creates the simulation "object" and allocates voxel memory
 AT_Result AT_simulation_create(
     AT_Simulation **simulation,
     const AT_Scene *scene,
     const AT_Settings *settings
+);
+
+// Runs the actual simulation and updates voxel bins etc..
+AT_Result AT_simulation_run(
+    AT_Simulation *simulation
 );
 
 void AT_simulation_destroy(
