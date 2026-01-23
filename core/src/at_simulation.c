@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <math.h>
 
 //TODO: move to at_internal.h when merged
 struct AT_Simulation {
@@ -35,9 +36,9 @@ AT_Result AT_simulation_create(AT_Simulation **out_simulation, const AT_Scene *s
     }
 
     AT_Vec3 dimensions = AT_vec3_sub(scene->world_AABB.max, scene->world_AABB.min);
-    float grid_x = (dimensions.x / settings->voxel_size) + 1;
-    float grid_y = (dimensions.y / settings->voxel_size) + 1;
-    float grid_z = (dimensions.z / settings->voxel_size) + 1;
+    float grid_x = ceilf(dimensions.x / settings->voxel_size);
+    float grid_y = ceilf(dimensions.y / settings->voxel_size);
+    float grid_z = ceilf(dimensions.z / settings->voxel_size);
     uint32_t num_voxels = (uint32_t)(grid_x * grid_y * grid_z);
 
     simulation->voxel_grid = calloc(num_voxels, sizeof(AT_Voxel));
@@ -78,7 +79,7 @@ AT_Result AT_simulation_run(AT_Simulation *simulation) {
 void AT_simulation_destroy(AT_Simulation *simulation) {
     if (!simulation) return;
 
-    float num_voxels = (uint32_t)(simulation->dimensions.x / simulation->voxel_size) *
+    uint32_t num_voxels = (uint32_t)(simulation->dimensions.x / simulation->voxel_size) *
                                  (simulation->dimensions.y / simulation->voxel_size) *
                                  (simulation->dimensions.z / simulation->voxel_size);
 
