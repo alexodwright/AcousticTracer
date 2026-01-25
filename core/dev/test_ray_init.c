@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "../external/raylib.h"
+#include "raylib.h"
 
 #define SCREEN_WIDTH 500
 #define SCREEN_HEIGHT 500
@@ -15,10 +16,22 @@ int main()
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "ray test");
 
     AT_Ray ray = AT_ray_init(
-        (AT_Vec3){0, 0, 0},
-        (AT_Vec3){1, 0, 0},
+        (AT_Vec3){0.5f, 0.5, 1.0f},
+        (AT_Vec3){0.0f, 0.0f, -1.0f},
         0
     );
+    ray.direction = AT_vec3_normalize(ray.direction);
+
+    AT_Triangle t1 = {
+        .v1 = {0.0f, 0.0f, 0.0f},
+        .v2 = {2.0f, 0.0f, 0.0f},
+        .v3 = {0.0f, 2.0f, 0.0f}
+    };
+
+    AT_RayHit ray_hit = {0};
+    if (AT_ray_triangle_intersect(&ray, &t1, &ray_hit)) {
+        printf("RAY HIT!\n");
+    }
 
     SetTargetFPS(60);
 
@@ -40,8 +53,13 @@ int main()
             {
                 DrawRay((Ray){
                     (Vector3){ray.origin.x, ray.origin.y, ray.origin.z},
-                    (Vector3){ray.direction.x, ray.direction.y, ray.direction.z}},
-                    RED);
+                    (Vector3){ray.direction.x, ray.direction.y, ray.direction.z}
+                    }, RED);
+
+                DrawTriangle3D((Vector3){t1.v1.x, t1.v1.y, t1.v1.z},
+                               (Vector3){t1.v2.x, t1.v2.y, t1.v2.z},
+                               (Vector3){t1.v3.x, t1.v3.y, t1.v3.z},
+                               GREEN);
             }
             EndMode3D();
         }
