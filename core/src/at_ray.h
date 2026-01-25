@@ -10,13 +10,13 @@
 #define AT_RAY_MAX_ENERGY 100.0f
 
 static inline AT_Ray AT_ray_init(
-    const AT_Vec3 *origin,
-    const AT_Vec3 *direction,
+    const AT_Vec3 origin,
+    const AT_Vec3 direction,
     uint32_t ray_id
 ) {
     AT_Ray ray = {
-        .origin = *origin,
-        .direction = AT_vec3_normalize(*direction),
+        .origin = origin,
+        .direction = AT_vec3_normalize(direction),
         .energy = AT_RAY_MAX_ENERGY,
         .total_distance = 0.0f,
         .ray_id = ray_id,
