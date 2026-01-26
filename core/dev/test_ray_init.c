@@ -5,8 +5,8 @@
 
 #include "raylib.h"
 
-#define SCREEN_WIDTH 500
-#define SCREEN_HEIGHT 500
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 800
 
 int main()
 {
@@ -19,7 +19,6 @@ int main()
         (AT_Vec3){0.0f, 0.0f, -1.0f},
         0
     );
-    ray.direction = AT_vec3_normalize(ray.direction);
 
     AT_Triangle t1 = {
         .v1 = {0.0f, 0.0f, 0.0f},
