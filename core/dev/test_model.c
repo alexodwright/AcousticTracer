@@ -2,33 +2,7 @@
 #include "acoustic/at_model.h"
 #include "../external/raylib.h"
 
-#include <math.h>
 #include <stdio.h>
-
-void move_camera(Camera3D *camera)
-{
-    const float rotationSpeed = 0.03f;
-    const float zoomSpeed = 0.5f;
-
-    float dx = camera->position.x - camera->target.x;
-    float dz = camera->position.z - camera->target.z;
-
-    float radius = sqrtf(dx*dx + dz*dz);
-    float angle = atan2f(dz, dx);
-
-    if (IsKeyDown(KEY_A)) {
-        angle -= rotationSpeed;
-    } else if (IsKeyDown(KEY_D)) {
-        angle += rotationSpeed;
-    } else if (IsKeyDown(KEY_S)) {
-        radius += zoomSpeed;
-    } else if (IsKeyDown(KEY_W)) {
-        radius -= zoomSpeed;
-    }
-
-    camera->position.x = camera->target.x + cosf(angle) * radius;
-    camera->position.z = camera->target.z + sinf(angle) * radius;
-}
 
 Mesh at_model_to_raylib_mesh(const AT_Model *model)
 {
@@ -79,7 +53,7 @@ void draw_model(const AT_Model *model)
     Model rl_model = LoadModelFromMesh(at_model_to_raylib_mesh(model));
 
     while(!WindowShouldClose()) {
-        move_camera(&camera);
+        UpdateCamera(&camera, CAMERA_FREE);
         BeginDrawing();
             ClearBackground(RAYWHITE);
             BeginMode3D(camera);
