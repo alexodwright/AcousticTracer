@@ -119,7 +119,7 @@ AT_Result AT_simulation_run(AT_Simulation *simulation)
                 if (!child) return AT_ERR_ALLOC_ERROR;
                 *child = closest;
                 child->child = NULL;
-                child->energy = ray->energy * (1.0f - AT_MATERIAL_ABSORPTION[simulation->scene->environment->triangle_materials[tri_idx]].absorption);
+                child->energy = ray->energy * (1.0f - AT_MATERIAL_TABLE[simulation->scene->environment->triangle_materials[tri_idx]].absorption);
                 ray->child = child;
                 ray = ray->child;
             }

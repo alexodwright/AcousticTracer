@@ -37,7 +37,7 @@ struct AT_Scene {
     AT_Source *sources;
     AT_AABB world_AABB;
     uint32_t num_sources;
-    AT_MaterialEnum material;
+    AT_MaterialType material;
     const AT_Model *environment;
 };
 
@@ -65,7 +65,7 @@ struct AT_Simulation {
     uint8_t fps;
 };
 
-static const AT_Material AT_MATERIAL_ABSORPTION[AT_MATERIAL_COUNT] = {
+static const AT_Material AT_MATERIAL_TABLE[AT_MATERIAL_COUNT] = {
     [AT_MATERIAL_CONCRETE] = {.absorption = 0.02f},
     [AT_MATERIAL_PLASTIC] = {.absorption = 0.03f},
     [AT_MATERIAL_WOOD] = {.absorption = 0.10f},
