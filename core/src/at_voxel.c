@@ -1,21 +1,125 @@
+#include "acoustic/at_math.h"
+#include "at_voxel.h"
+#include "at_internal.h"
 #include "../src/at_utils.h"
-#include "../src/at_internal.h"
+#include <stdint.h>
 
-AT_Result AT_voxel_init(AT_Voxel *voxel)
-{
-    if (!voxel) return AT_ERR_INVALID_ARGUMENT;
-    AT_da_init(voxel);
-    return AT_OK;
-}
+#define VOXEL_MAX_STEPS 100
+#define SPEED_OF_SOUND 343.0f
+#define SLOWER_SPEED 10.0f
 
-AT_Result AT_voxel_bin_append(AT_Voxel *voxel, float bin)
+void AT_voxel_ray_step(AT_Simulation *simulation, AT_Ray *ray, AT_Vec3 ray_end)
 {
-    if (!voxel) return AT_ERR_INVALID_ARGUMENT;
-    AT_da_append(voxel, bin);
-    return AT_OK;
-}
+    //the ray segment spans from p0 (origin) to p1 (end)
+    // out current position within the segement is "t"
 
-void AT_voxel_cleanup(AT_Voxel *voxel)
-{
-    AT_da_free(voxel);
+    printf("Ray: %i: ", ray->ray_id);
+
+    //origin in voxel space
+    AT_Vec3 p0 = AT_vec3_scale(
+        AT_vec3_sub(ray->origin, simulation->origin),
+        1.0f / simulation->voxel_size
+    );
+    printf("p0: {%f, %f, %f}, ", p0.x, p0.y, p0.z);
+
+    //ray end in voxel space
+    AT_Vec3 p1 = AT_vec3_scale(
+        AT_vec3_sub(ray_end, simulation->origin),
+        1.0f / simulation->voxel_size
+    );
+    printf("p1: {%f, %f, %f}, ", p1.x, p1.y, p1.z);
+
+    //step direction (+1 or -1 per axis)
+    const AT_Vec3 step = AT_get_sign_vec3(ray->direction);
+    printf("Step: {%.1f, %.1f, %.1f}, ", step.x, step.y, step.z);
+
+    //distance along "t" to move one voxel
+    const AT_Vec3 delta = AT_vec3_delta(ray->direction);
+    printf("Delta: {%f, %f, %f}, ", delta.x, delta.y, delta.z);
+
+    const int grid_x = simulation->grid_dimensions.x;
+    const int grid_y = simulation->grid_dimensions.y;
+    const int grid_z = simulation->grid_dimensions.z;
+
+    AT_Vec3i pos = (AT_Vec3i){
+        AT_clamp((int)floorf(p0.x), 0, grid_x - 1),
+        AT_clamp((int)floorf(p0.y), 0, grid_y - 1),
+        AT_clamp((int)floorf(p0.z), 0, grid_z - 1)
+    };
+
+    //distance along ray until we cross next voxel boundary each axis
+    // aka the max "t" :|
+    // since the ray can only leave through one face of the voxel first,
+    // the smallest of the three t_max values tells us which face
+    //this gif kinda helps visualize it: https://m4xc.dev/anim/articles/amanatides-and-woo/walk-anim.mp4
+    AT_Vec3 t_max;
+
+    t_max.x = (step.x > 0) ?
+        ((pos.x + 1.0f) - p0.x) * delta.x :
+        (p0.x - pos.x) * delta.x;
+
+    t_max.y = (step.y > 0) ?
+        ((pos.y + 1.0f) - p0.y) * delta.y :
+        (p0.y - pos.y) * delta.y;
+
+    t_max.z = (step.z > 0) ?
+        ((pos.z + 1.0f) - p0.z) * delta.z :
+        (p0.z - pos.z) * delta.z;
+
+    printf("t_max: {%f, %f, %f} \n", t_max.x, t_max.y, t_max.z);
+
+    //curr pos within ray segment
+    float t = 0.0f;
+    const float t_end = AT_vec3_length(AT_vec3_sub(p1, p0));
+
+    //while we havent yet reached the end of the ray segment
+    while (t < t_end) {
+        if (pos.x < 0 || pos.x >= grid_x ||
+            pos.y < 0 || pos.y >= grid_y ||
+            pos.z < 0 || pos.z >= grid_z) break;
+
+        //index into the voxel_grid array
+        const uint32_t voxel_idx =
+            (uint32_t)pos.z * grid_y * grid_x +
+            (uint32_t)pos.y * grid_x +
+            (uint32_t)pos.x;
+
+        AT_Voxel *voxel = &simulation->voxel_grid[voxel_idx];
+
+        float t_current = fminf(t_max.x, fminf(t_max.y, t_max.z));
+        if (t_current > t_end) break; //if we reached the end of the ray
+
+        t = t_current;
+
+        //this is where we add energy to voxels bin
+        //to get the bin_index we woudl have to know the length of the ray at this point,
+        // this would include the length of its parents (if it has any)
+        // we cant just use the current t, as then new rays would be adding energy to old bins
+        float total_world_dist = ray->total_distance + (t * simulation->voxel_size);
+        float curr_time = total_world_dist / SPEED_OF_SOUND;
+        //float curr_time = total_world_dist / SLOWER_SPEED;
+        size_t bin_index = (size_t)(curr_time / simulation->bin_width);
+
+        //grow bin count
+        while (voxel->count <= bin_index) {
+            AT_voxel_bin_append(voxel, 0.0f);
+        }
+
+        if (AT_voxel_add_energy(voxel, ray->energy, bin_index) != AT_OK) {
+            break;
+        }
+
+        //now we look for smallest t_max and advance through it
+        //t_max.x smallest
+        if (t_max.x < t_max.y && t_max.x < t_max.z) {
+            pos.x += step.x;
+            t_max.x += delta.x;
+        } else if (t_max.y < t_max.z) { //smallest y
+            pos.y += step.y;
+            t_max.y += delta.y;
+        } else { //smallest z
+            pos.z += step.z;
+            t_max.z += delta.z;
+        }
+    }
 }

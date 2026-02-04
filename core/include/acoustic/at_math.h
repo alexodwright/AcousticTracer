@@ -6,6 +6,7 @@
 #define AT_MATH_H
 
 #include <math.h>
+#include <float.h>
 
 /** \brief Groups three floats to represent a vector of size 3.
  */
@@ -13,13 +14,9 @@ typedef struct {
     float x, y, z;
 } AT_Vec3;
 
-/** \brief Groups the min and max of a voxel for AABB collision detection.
- */
 typedef struct {
-    AT_Vec3 min;
-    AT_Vec3 max;
-    AT_Vec3 midpoint;
-} AT_AABB;
+    int x, y, z;
+} AT_Vec3i;
 
 /** \brief Groups three AT_Vec3 to represent a triangle.
  */
@@ -35,7 +32,7 @@ typedef struct {
 */
 static inline AT_Vec3 AT_vec3(float x, float y, float z)
 {
-    return (AT_Vec3){x, y, z};
+    return (AT_Vec3){ x, y, z };
 }
 
 /** \brief AT_Vec3 constructor for a zero initialised vector.
@@ -45,7 +42,7 @@ static inline AT_Vec3 AT_vec3(float x, float y, float z)
 */
 static inline AT_Vec3 AT_vec3_zero(void)
 {
-    return (AT_Vec3){0.0f, 0.0f, 0.0f};
+    return (AT_Vec3){ 0.0f, 0.0f, 0.0f };
 }
 
 /** \brief Adds two AT_Vec3.
@@ -55,7 +52,7 @@ static inline AT_Vec3 AT_vec3_zero(void)
 */
 static inline AT_Vec3 AT_vec3_add(AT_Vec3 a, AT_Vec3 b)
 {
-    return (AT_Vec3){a.x + b.x, a.y + b.y, a.z + b.z};
+    return (AT_Vec3){ a.x + b.x, a.y + b.y, a.z + b.z };
 }
 
 /** \brief Subtracts two AT_Vec3.
@@ -65,7 +62,31 @@ static inline AT_Vec3 AT_vec3_add(AT_Vec3 a, AT_Vec3 b)
 */
 static inline AT_Vec3 AT_vec3_sub(AT_Vec3 a, AT_Vec3 b)
 {
-    return (AT_Vec3){a.x - b.x, a.y - b.y, a.z - b.z};
+    return (AT_Vec3){ a.x - b.x, a.y - b.y, a.z - b.z };
+}
+
+/** \brief Product of two AT_Vec3.
+    \relates AT_Vec3
+
+    \retval AT_Vec3 The result of the vector multiplication.
+*/
+static inline AT_Vec3 AT_vec3_mul(AT_Vec3 a, AT_Vec3 b)
+{
+    return (AT_Vec3){ a.x * b.x, a.y * b.y, a.z * b.z };
+}
+
+/** \brief Calculates the inverse of a vector.
+    \relates AT_Vec3
+
+    \retval AT_Vec3 The inverse of the input vector.
+*/
+static inline AT_Vec3 AT_vec3_inv(AT_Vec3 v)
+{
+    return (AT_Vec3){
+        v.x != 0.0f ? 1.0f / v.x : FLT_MAX,
+        v.y != 0.0f ? 1.0f / v.y : FLT_MAX,
+        v.z != 0.0f ? 1.0f / v.z : FLT_MAX
+    };
 }
 
 /** \brief Scales an AT_Vec3 by a given scalar.
@@ -78,7 +99,7 @@ static inline AT_Vec3 AT_vec3_sub(AT_Vec3 a, AT_Vec3 b)
 */
 static inline AT_Vec3 AT_vec3_scale(AT_Vec3 v, float s)
 {
-    return (AT_Vec3){v.x * s, v.y * s, v.z * s};
+    return (AT_Vec3){ v.x * s, v.y * s, v.z * s };
 }
 
 /** \brief Performs vector dot operation on two given AT_Vec3.
@@ -88,7 +109,7 @@ static inline AT_Vec3 AT_vec3_scale(AT_Vec3 v, float s)
 */
 static inline float AT_vec3_dot(AT_Vec3 a, AT_Vec3 b)
 {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
+    return a.x*b.x + a.y*b.y + a.z*b.z;
 }
 
 /** \brief Performs vector cross multiplication on two given AT_Vec3.
@@ -148,4 +169,19 @@ static inline float AT_vec3_distance_sq(AT_Vec3 a, AT_Vec3 b)
            (b.y - a.y) * (b.y - a.y) +
            (b.z - a.z) * (b.z - a.z);
 }
+
+/* \brief Computes per axis step distance used in DDA.
+   \relates AT_Vec3
+
+  \retval AT_Vec3 Per axis step distance.
+ */
+static inline AT_Vec3 AT_vec3_delta(AT_Vec3 v)
+{
+    return (AT_Vec3){
+        v.x != 0.0f ? fabsf(1.0f / v.x) : FLT_MAX,
+        v.y != 0.0f ? fabsf(1.0f / v.y) : FLT_MAX,
+        v.z != 0.0f ? fabsf(1.0f / v.z) : FLT_MAX
+    };
+}
+
 #endif // AT_MATH_H

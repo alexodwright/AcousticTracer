@@ -11,14 +11,15 @@
 static inline AT_Ray AT_ray_init(
     const AT_Vec3 origin,
     const AT_Vec3 direction,
+    float current_distance,
     uint32_t ray_id
 ) {
 
     AT_Ray ray = {
     .origin = origin,
     .direction = AT_vec3_normalize(direction),
-    .energy = 1.0f,
-    .total_distance = 0.0f,
+    .energy = AT_RAY_MAX_ENERGY,
+    .total_distance = current_distance,
     .ray_id = ray_id,
     .bounce_count = 0,
     .child = NULL

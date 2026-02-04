@@ -54,6 +54,7 @@ AT_Result AT_simulation_create(AT_Simulation **out_simulation, const AT_Scene *s
     simulation->dimensions = dimensions;
     simulation->fps = settings->fps;
     simulation->num_rays = settings->num_rays;
+    simulation->num_voxels = num_voxels;
     simulation->grid_dimensions = (AT_Vec3){grid_x, grid_y, grid_z}; //dimensions in terms of voxels
     simulation->voxel_size = settings->voxel_size;
     simulation->bin_width = 1.0f / settings->fps;
@@ -92,6 +93,7 @@ AT_Result AT_simulation_run(AT_Simulation *simulation)
             simulation->rays[ray_idx] = AT_ray_init(
                 simulation->scene->sources[s].position,
                 varied_direction,
+                0.0f,
                 ray_idx //ray index
             );
         }
@@ -104,6 +106,7 @@ AT_Result AT_simulation_run(AT_Simulation *simulation)
                 AT_Ray closest = AT_ray_init((AT_Vec3){
                     FLT_MAX, FLT_MAX, FLT_MAX},
                     (AT_Vec3){0},
+                    ray->total_distance,
                     ray_idx);
                 bool intersects = false;
                 uint32_t tri_idx = 0;
@@ -119,12 +122,43 @@ AT_Result AT_simulation_run(AT_Simulation *simulation)
                 if (!child) return AT_ERR_ALLOC_ERROR;
                 *child = closest;
                 child->child = NULL;
-                child->energy = ray->energy * (1.0f - AT_MATERIAL_TABLE[simulation->scene->environment->triangle_materials[tri_idx]].absorption);
+                child->ray_id = ray->ray_id + simulation->num_rays;
+                AT_Vec3 hit_point = closest.origin;
+                child->total_distance = ray->total_distance +
+                    AT_vec3_distance(ray->origin, hit_point);
                 ray->child = child;
                 ray = ray->child;
             }
         }
     }
+
+    //DDA
+
+    for (uint32_t i = 0; i < simulation->num_rays; i++) {
+        AT_Ray *ray = &simulation->rays[i];
+
+        while (ray) {
+            //if the ray has a child, use its origin as the end
+            //otherwise set the end as the direction scaled by the maximum distance in the scene
+            AT_Vec3 ray_end = ray->child ?
+                ray->child->origin :
+                    AT_vec3_add(
+                      ray->origin,
+                      AT_vec3_scale(
+                          ray->direction,
+                          AT_vec3_distance(
+                              simulation->scene->world_AABB.min,
+                              simulation->scene->world_AABB.max
+                          )
+                      )
+                  );
+
+            AT_voxel_ray_step(simulation, ray, ray_end);
+            ray = ray->child;
+        }
+    }
+
+
     return AT_OK;
 }
 
