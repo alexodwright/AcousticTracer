@@ -36,15 +36,21 @@ function Model({
 }) {
   const { scene } = useGLTF(url, true);
 
-  const clonedScene = useMemo(() => scene.clone(), [scene]);
+  if (scene) {
+    scene.traverse((node) => {
+      node.position.set(0, 0, 0);
+      node.rotation.set(0, 0, 0);
+      node.scale.set(1, 1, 1);
+    });
+  }
 
   useEffect(() => {
-    if (clonedScene) {
-      const box = new THREE.Box3().setFromObject(clonedScene);
+    if (scene) {
+      const box = new THREE.Box3().setFromObject(scene);
       onLoad(box);
     }
-  }, [clonedScene, onLoad]); // Include url to force recalculation when model changes
-  return <primitive object={clonedScene} />;
+  }, [scene, onLoad]); // Include url to force recalculation when model changes
+  return <primitive object={scene} />;
 }
 
 export default function SceneCanvas({ modelUrl }: SceneCanvasProps) {
