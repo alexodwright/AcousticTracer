@@ -144,7 +144,12 @@ export default function ConfigPanel() {
         <input
           type="checkbox"
           checked={showTexture}
-          onChange={(e) => setShowTexture(e.target.checked)}
+          onChange={(e) => {
+            if (wireframe) {
+              setWireframe(false);
+            }
+            setShowTexture(e.target.checked);
+          }}
           className="accent-button-primary scale-125"
         />
       </div>
@@ -153,7 +158,12 @@ export default function ConfigPanel() {
         <input
           type="checkbox"
           checked={wireframe}
-          onChange={(e) => setWireframe(e.target.checked)}
+          onChange={(e) => {
+            if (showTexture) {
+              setShowTexture(false);
+            }
+            setWireframe(e.target.checked);
+          }}
           className="accent-button-primary scale-125"
         />
       </div>
